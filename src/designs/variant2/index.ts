@@ -1,0 +1,1 @@
+export { default as AppVariant2 } from './AppVariant2';
