@@ -93,7 +93,7 @@ export default function App(){
 
   // Função para exportar para Google Sheets
   const handleExport = async () => {
-    const csvData = await exportToGoogleSheets('', '');
+    const csvData = await exportToGoogleSheets();
     const blob = new Blob([csvData], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

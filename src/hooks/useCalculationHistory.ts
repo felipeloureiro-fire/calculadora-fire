@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalculationData } from '../types';
+import type { CalculationData } from '../types';
 
 const STORAGE_KEY = 'fire-banking-calculations';
 
@@ -38,8 +38,8 @@ export function useCalculationHistory() {
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  const exportToGoogleSheets = async (spreadsheetId: string, sheetName: string = 'Calculations') => {
-    // This will be implemented with Google Sheets API
+  const exportToGoogleSheets = async () => {
+    // Export calculation history as CSV for Google Sheets
     const data = history.map(calc => [
       calc.timestamp.toLocaleDateString('pt-BR'),
       calc.timestamp.toLocaleTimeString('pt-BR'),
