@@ -270,52 +270,75 @@ export default function AppVariant2(){
                 <p className="text-sm mt-2">Vá para a aba "Resultados" e clique em "Salvar Cálculo" para começar.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {history.map((item, index) => {
-                  // Calcular status baseado nas metas atuais
-                  const itemStatus = {
-                    cplOk: item.results.cpl <= cplMax,
-                    mqlOk: item.results.pctMQL >= mqlMin,
-                    desqOk: item.results.pctDesq <= desqMax,
-                  };
-                  
-                  return (
-                    <div key={item.id} className="bg-gray-50 rounded-xl p-4 border">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-semibold text-gray-800">
-                            Cálculo #{history.length - index}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            {item.timestamp.toLocaleDateString('pt-BR')} às {item.timestamp.toLocaleTimeString('pt-BR')}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${itemStatus.cplOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            CPL {itemStatus.cplOk ? '✓' : '⚠'}
-                          </span>
-                          <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${itemStatus.mqlOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            MQL {itemStatus.mqlOk ? '✓' : '⚠'}
-                          </span>
-                          <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${itemStatus.desqOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            DESQ {itemStatus.desqOk ? '✓' : '⚠'}
-                          </span>
-                        </div>
-                      </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse bg-white rounded-lg shadow-sm overflow-hidden">
+                  {/* Header da tabela */}
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">#</th>
+                      <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">Data/Hora</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">Orçamento</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">Leads</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">CPL</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">MQL</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">% MQL</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">% Desq</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">Reuniões</th>
+                      <th className="text-right p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">Contratos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((item, index) => {
+                      const itemStatus = {
+                        cplOk: item.results.cpl <= cplMax,
+                        mqlOk: item.results.pctMQL >= mqlMin,
+                        desqOk: item.results.pctDesq <= desqMax,
+                      };
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div><strong>Orçamento:</strong> {fmtMoney(item.inputs.orcamento)}</div>
-                        <div><strong>Leads:</strong> {item.inputs.qLeads}</div>
-                        <div><strong>CPL:</strong> {fmtMoney(item.results.cpl)}</div>
-                        <div><strong>% MQL:</strong> {fmtPct(item.results.pctMQL)}</div>
-                        <div><strong>MQL:</strong> {item.inputs.qMQL}</div>
-                        <div><strong>Desqualificados:</strong> {item.inputs.qDesq}</div>
-                        <div><strong>% Desq:</strong> {fmtPct(item.results.pctDesq)}</div>
-                        <div><strong>Contratos:</strong> {item.inputs.qContratos}</div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      return (
+                        <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="p-3 text-sm font-semibold text-gray-900">
+                            {history.length - index}
+                          </td>
+                          <td className="p-3 text-sm text-gray-700">
+                            <div>{item.timestamp.toLocaleDateString('pt-BR')}</div>
+                            <div className="text-xs text-gray-500">{item.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                          </td>
+                          <td className="p-3 text-sm text-right font-semibold text-gray-900">
+                            {fmtMoney(item.inputs.orcamento)}
+                          </td>
+                          <td className="p-3 text-sm text-right text-gray-700">
+                            {item.inputs.qLeads}
+                          </td>
+                          <td className="p-3 text-sm text-right">
+                            <span className={`inline-flex items-center justify-center min-w-[80px] px-3 py-2 text-white text-xs font-bold shadow-sm hover:shadow-md transition-shadow ${itemStatus.cplOk ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`} style={{borderRadius: '20px'}}>
+                              {fmtMoney(item.results.cpl)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-sm text-right text-gray-700">
+                            {item.inputs.qMQL}
+                          </td>
+                          <td className="p-3 text-sm text-right">
+                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-2 text-white text-xs font-bold shadow-sm hover:shadow-md transition-shadow ${itemStatus.mqlOk ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`} style={{borderRadius: '20px'}}>
+                              {fmtPct(item.results.pctMQL)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-sm text-right">
+                            <span className={`inline-flex items-center justify-center min-w-[60px] px-3 py-2 text-white text-xs font-bold shadow-sm hover:shadow-md transition-shadow ${itemStatus.desqOk ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`} style={{borderRadius: '20px'}}>
+                              {fmtPct(item.results.pctDesq)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-sm text-right text-gray-700">
+                            {item.inputs.qReuMarc}/{item.inputs.qReuAcont}
+                          </td>
+                          <td className="p-3 text-sm text-right font-semibold text-green-700">
+                            {item.inputs.qContratos}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
                 
                 {/* Botão para limpar histórico */}
                 {history.length > 0 && (
