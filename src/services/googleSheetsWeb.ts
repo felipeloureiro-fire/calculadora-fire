@@ -88,10 +88,10 @@ export class GoogleSheetsWebService {
     return response.result.spreadsheetId!;
   }
 
-  // Exportar cálculos para planilha
-  async exportCalculations(
+  // Exportar cálculo atual para planilha compartilhada (adiciona nova linha)
+  async appendCalculation(
     spreadsheetId: string,
-    calculations: CalculationData[],
+    calculation: CalculationData,
     targets: { cplMax: number; mqlMin: number; desqMax: number },
     sheetName: string = 'Calculations'
   ): Promise<void> {
@@ -100,47 +100,58 @@ export class GoogleSheetsWebService {
     }
 
     try {
-      const headers = this.getHeaders();
-      const rows = calculations.map(calc => this.formatCalculationRow(calc, targets));
-      const values = [headers, ...rows];
+      // Verificar se planilha tem headers
+      const existingData = await gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${sheetName}!A1:Z1`,
+      });
 
-      // Limpar e inserir dados
-      await gapi.client.sheets.spreadsheets.values.clear({
+      // Se não tem headers, adicionar
+      if (!existingData.result.values || existingData.result.values.length === 0) {
+        const headers = this.getHeaders();
+        await gapi.client.sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${sheetName}!A1`,
+          valueInputOption: 'RAW',
+          resource: {
+            values: [headers],
+          },
+        });
+
+        // Formatar cabeçalhos
+        await gapi.client.sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          resource: {
+            requests: [{
+              repeatCell: {
+                range: {
+                  startRowIndex: 0,
+                  endRowIndex: 1,
+                  startColumnIndex: 0,
+                  endColumnIndex: headers.length
+                },
+                cell: {
+                  userEnteredFormat: {
+                    backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 },
+                    textFormat: { bold: true }
+                  }
+                },
+                fields: 'userEnteredFormat(backgroundColor,textFormat)'
+              }
+            }]
+          }
+        });
+      }
+
+      // Adicionar nova linha com o cálculo atual
+      const newRow = this.formatCalculationRow(calculation, targets);
+      await gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId,
         range: `${sheetName}!A:Z`,
-      });
-
-      await gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${sheetName}!A1`,
         valueInputOption: 'RAW',
         resource: {
-          values,
+          values: [newRow],
         },
-      });
-
-      // Formatar cabeçalhos
-      await gapi.client.sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        resource: {
-          requests: [{
-            repeatCell: {
-              range: {
-                startRowIndex: 0,
-                endRowIndex: 1,
-                startColumnIndex: 0,
-                endColumnIndex: headers.length
-              },
-              cell: {
-                userEnteredFormat: {
-                  backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 },
-                  textFormat: { bold: true }
-                }
-              },
-              fields: 'userEnteredFormat(backgroundColor,textFormat)'
-            }
-          }]
-        }
       });
 
     } catch (error) {

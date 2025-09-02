@@ -1,8 +1,7 @@
 import { gapi } from 'gapi-script';
-import credentialsData from '../../credentials.json';
 
-const CLIENT_ID = credentialsData.installed.client_id;
-const API_KEY = 'AIzaSyBvOhUNOqQoJzKzNOQiClqVOqN3rWHACkE'; // Generated API Key for Google Sheets access
+// OAuth-only configuration (no API key needed)
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '952367386931-l0o2sscuf6c135guhv22cut7739p6o6s.apps.googleusercontent.com';
 const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
@@ -17,7 +16,6 @@ export class GoogleAuthService {
       gapi.load('auth2:client', async () => {
         try {
           await gapi.client.init({
-            apiKey: API_KEY,
             clientId: CLIENT_ID,
             discoveryDocs: [DISCOVERY_DOC],
             scope: SCOPES
@@ -27,6 +25,7 @@ export class GoogleAuthService {
           this.isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
           resolve();
         } catch (error) {
+          console.error('Erro na inicialização do Google API:', error);
           reject(error);
         }
       });

@@ -121,28 +121,52 @@ export default function AppVariant2(){
 
     setIsExporting(true);
     try {
+      // Inicializar serviço
       await sheetsService.initialize();
       
+      // Autenticar usuário
       const isAuth = await sheetsService.authenticate();
       if (!isAuth) {
         alert('Falha na autenticação. Tente novamente.');
         return;
       }
 
-      const spreadsheetId = await sheetsService.createSpreadsheet();
-      await sheetsService.exportCalculations(
+      // Usar planilha compartilhada configurada
+      const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID;
+      if (!spreadsheetId) {
+        alert('❌ ID da planilha compartilhada não configurado. Verifique VITE_GOOGLE_SPREADSHEET_ID no arquivo .env');
+        return;
+      }
+      
+      // Adicionar apenas o cálculo atual como nova linha
+      const currentCalculation = {
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+        inputs: { orcamento, qLeads, qMQL, qDesq, qReuMarc, qReuAcont, qContratos, qContasInt, atividadesSDR },
+        results: calc,
+        status
+      };
+
+      await sheetsService.appendCalculation(
         spreadsheetId, 
-        history, 
+        currentCalculation, 
         { cplMax, mqlMin, desqMax }
       );
 
+      // Sucesso
       const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
-      if (confirm(`Dados exportados com sucesso! Deseja abrir a planilha?\n\n${spreadsheetUrl}`)) {
+      alert(`✅ Dados adicionados à planilha compartilhada!`);
+      if (confirm(`Deseja abrir a planilha compartilhada?\n\n${spreadsheetUrl}`)) {
         window.open(spreadsheetUrl, '_blank');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro na exportação:', error);
-      alert('Erro ao exportar para Google Sheets. Verifique o console para detalhes.');
+      
+      if (error.status === 403) {
+        alert('❌ Permissões insuficientes. Verifique as configurações da API.');
+      } else {
+        alert(`❌ Erro ao exportar: ${error.message || 'Erro desconhecido'}`);
+      }
     } finally {
       setIsExporting(false);
     }
