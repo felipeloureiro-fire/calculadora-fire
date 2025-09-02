@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useCalculationHistory } from "../../hooks/useCalculationHistory";
+import { GoogleSheetsWebService } from "../../services/googleSheetsWeb";
 
 // Utilidades de formatação (pt-BR)
 const fmtMoney = (v:number) => isFinite(v) ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00";
@@ -57,9 +58,11 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 export default function AppVariant2(){
-  const { history, saveCalculation, clearHistory, exportToGoogleSheets } = useCalculationHistory();
+  const { history, saveCalculation, clearHistory } = useCalculationHistory();
   const [activeTab, setActiveTab] = useState<"entradas" | "resultados" | "resumo">("entradas");
   const [editingTargets, setEditingTargets] = useState(false);
+  const [sheetsService] = useState(() => new GoogleSheetsWebService());
+  const [isExporting, setIsExporting] = useState(false);
   
   // Entradas (controladas)
   const [orcamento, setOrcamento] = useState<number>(0);
@@ -111,14 +114,38 @@ export default function AppVariant2(){
 
   // Função para exportar para Google Sheets
   const handleExport = async () => {
-    const csvData = await exportToGoogleSheets();
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fire-banking-calculations-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    if (history.length === 0) {
+      alert('Nenhum cálculo salvo para exportar.');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await sheetsService.initialize();
+      
+      const isAuth = await sheetsService.authenticate();
+      if (!isAuth) {
+        alert('Falha na autenticação. Tente novamente.');
+        return;
+      }
+
+      const spreadsheetId = await sheetsService.createSpreadsheet();
+      await sheetsService.exportCalculations(
+        spreadsheetId, 
+        history, 
+        { cplMax, mqlMin, desqMax }
+      );
+
+      const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+      if (confirm(`Dados exportados com sucesso! Deseja abrir a planilha?\n\n${spreadsheetUrl}`)) {
+        window.open(spreadsheetUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Erro na exportação:', error);
+      alert('Erro ao exportar para Google Sheets. Verifique o console para detalhes.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Pequeno cartão KPI
@@ -267,9 +294,10 @@ export default function AppVariant2(){
           <div className="flex-1"></div>
           <button 
             onClick={handleExport}
-            className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+            disabled={isExporting}
+            className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Exportar CSV
+            {isExporting ? 'Exportando...' : 'Exportar Google Sheets'}
           </button>
         </div>
       </header>
