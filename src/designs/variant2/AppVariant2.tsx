@@ -19,7 +19,7 @@ function StatusBadge({ ok, label }:{ ok:boolean; label:string }){
 function NumberField({ label, value, setValue, suffix, step = 1 }:{
   label:string;
   value:number | string;
-  setValue:(n:number)=>void;
+  setValue:(n:number | '')=>void;
   suffix?:string;
   step?:number;
 }){
@@ -31,9 +31,10 @@ function NumberField({ label, value, setValue, suffix, step = 1 }:{
           type="number"
           step={step}
           className="w-full rounded-2xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-800"
-          value={Number.isNaN(value as number) ? "" : value}
-          onChange={(e)=> setValue(Number(e.target.value))}
+          value={value === '' ? '' : value}
+          onChange={(e)=> setValue(e.target.value === '' ? '' : Number(e.target.value))}
           min={0}
+          placeholder="0"
         />
         {suffix && <span className="text-gray-500 text-sm pr-1">{suffix}</span>}
       </div>
@@ -64,32 +65,40 @@ export default function AppVariant2(){
   const [sheetsService] = useState(() => new GoogleSheetsWebService());
   const [isExporting, setIsExporting] = useState(false);
   
-  // Entradas (controladas)
-  const [orcamento, setOrcamento] = useState<number>(0);
-  const [qLeads, setQLeads] = useState<number>(0);
-  const [qMQL, setQMQL] = useState<number>(0);
-  const [qDesq, setQDesq] = useState<number>(0);
-  const [qReuMarc, setQReuMarc] = useState<number>(0);
-  const [qReuAcont, setQReuAcont] = useState<number>(0);
-  const [qContratos, setQContratos] = useState<number>(0);
-  const [qContasInt, setQContasInt] = useState<number>(0);
-  const [atividadesSDR, setAtividadesSDR] = useState<number>(0);
+  // Entradas (controladas) - começam vazias para melhor UX
+  const [orcamento, setOrcamento] = useState<number | ''>('');
+  const [qLeads, setQLeads] = useState<number | ''>('');
+  const [qMQL, setQMQL] = useState<number | ''>('');
+  const [qDesq, setQDesq] = useState<number | ''>('');
+  const [qReuMarc, setQReuMarc] = useState<number | ''>('');
+  const [qReuAcont, setQReuAcont] = useState<number | ''>('');
+  const [qContratos, setQContratos] = useState<number | ''>('');
+  const [qContasInt, setQContasInt] = useState<number | ''>('');
+  const [atividadesSDR, setAtividadesSDR] = useState<number | ''>('');
 
   // Regras-alvo (agora editáveis)
   const [cplMax, setCplMax] = useState<number>(40);
   const [mqlMin, setMqlMin] = useState<number>(0.30);
   const [desqMax, setDesqMax] = useState<number>(0.15);
 
-  // Cálculos derivados
+  // Cálculos derivados (converte strings vazias para 0)
   const calc = useMemo(()=>{
     const safeDiv = (a:number, b:number) => (b && isFinite(a/b)) ? a/b : 0;
-    const cpl = safeDiv(orcamento, qLeads);
-    const custoPorMQL = safeDiv(orcamento, qMQL);
-    const pctDesq = safeDiv(qDesq, qLeads);
-    const noShow = Math.max(0, qReuMarc - qReuAcont);
-    const atividadePorMQL = safeDiv(atividadesSDR, qMQL);
-    const conectividadeSDR = safeDiv(qReuMarc, qMQL);
-    const pctMQL = safeDiv(qMQL, qLeads);
+    const numOrcamento = Number(orcamento) || 0;
+    const numQLeads = Number(qLeads) || 0;
+    const numQMQL = Number(qMQL) || 0;
+    const numQDesq = Number(qDesq) || 0;
+    const numQReuMarc = Number(qReuMarc) || 0;
+    const numQReuAcont = Number(qReuAcont) || 0;
+    const numAtividadesSDR = Number(atividadesSDR) || 0;
+    
+    const cpl = safeDiv(numOrcamento, numQLeads);
+    const custoPorMQL = safeDiv(numOrcamento, numQMQL);
+    const pctDesq = safeDiv(numQDesq, numQLeads);
+    const noShow = Math.max(0, numQReuMarc - numQReuAcont);
+    const atividadePorMQL = safeDiv(numAtividadesSDR, numQMQL);
+    const conectividadeSDR = safeDiv(numQReuMarc, numQMQL);
+    const pctMQL = safeDiv(numQMQL, numQLeads);
 
     return {
       cpl, custoPorMQL, pctDesq, noShow, atividadePorMQL, conectividadeSDR, pctMQL
@@ -106,7 +115,17 @@ export default function AppVariant2(){
   // Função para salvar cálculo atual
   const handleSaveCalculation = () => {
     saveCalculation({
-      inputs: { orcamento, qLeads, qMQL, qDesq, qReuMarc, qReuAcont, qContratos, qContasInt, atividadesSDR },
+      inputs: { 
+        orcamento: Number(orcamento) || 0, 
+        qLeads: Number(qLeads) || 0, 
+        qMQL: Number(qMQL) || 0, 
+        qDesq: Number(qDesq) || 0, 
+        qReuMarc: Number(qReuMarc) || 0, 
+        qReuAcont: Number(qReuAcont) || 0, 
+        qContratos: Number(qContratos) || 0, 
+        qContasInt: Number(qContasInt) || 0, 
+        atividadesSDR: Number(atividadesSDR) || 0 
+      },
       results: calc,
       status
     });
@@ -142,7 +161,17 @@ export default function AppVariant2(){
       const currentCalculation = {
         id: crypto.randomUUID(),
         timestamp: new Date(),
-        inputs: { orcamento, qLeads, qMQL, qDesq, qReuMarc, qReuAcont, qContratos, qContasInt, atividadesSDR },
+        inputs: { 
+          orcamento: Number(orcamento) || 0, 
+          qLeads: Number(qLeads) || 0, 
+          qMQL: Number(qMQL) || 0, 
+          qDesq: Number(qDesq) || 0, 
+          qReuMarc: Number(qReuMarc) || 0, 
+          qReuAcont: Number(qReuAcont) || 0, 
+          qContratos: Number(qContratos) || 0, 
+          qContasInt: Number(qContasInt) || 0, 
+          atividadesSDR: Number(atividadesSDR) || 0 
+        },
         results: calc,
         status
       };
