@@ -59,10 +59,14 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 export default function AppVariant2(){
+  console.log('🚀 AppVariant2 iniciando...');
   const { history, saveCalculation, clearHistory } = useCalculationHistory();
   const [activeTab, setActiveTab] = useState<"entradas" | "resultados" | "resumo">("entradas");
   const [editingTargets, setEditingTargets] = useState(false);
-  const [sheetsService] = useState(() => new GoogleSheetsWebService());
+  const [sheetsService] = useState(() => {
+    console.log('🏗️ Criando GoogleSheetsWebService...');
+    return new GoogleSheetsWebService();
+  });
   const [isExporting, setIsExporting] = useState(false);
   
   // Entradas (controladas) - começam vazias para melhor UX
@@ -133,6 +137,7 @@ export default function AppVariant2(){
 
   // Função para exportar para Google Sheets
   const handleExport = async () => {
+    console.log('🚀 handleExport chamado');
     if (history.length === 0) {
       alert('Nenhum cálculo salvo para exportar.');
       return;
@@ -140,12 +145,16 @@ export default function AppVariant2(){
 
     setIsExporting(true);
     try {
+      console.log('📡 Inicializando serviço Google Sheets...');
       // Inicializar serviço
       await sheetsService.initialize();
+      console.log('✅ Serviço inicializado, tentando autenticar...');
       
       // Autenticar usuário
       const isAuth = await sheetsService.authenticate();
+      console.log('🔍 Resultado da autenticação:', isAuth);
       if (!isAuth) {
+        console.error('❌ Falha na autenticação');
         alert('Falha na autenticação. Tente novamente.');
         return;
       }
@@ -157,30 +166,14 @@ export default function AppVariant2(){
         return;
       }
       
-      // Adicionar apenas o cálculo atual como nova linha
-      const currentCalculation = {
-        id: crypto.randomUUID(),
-        timestamp: new Date(),
-        inputs: { 
-          orcamento: Number(orcamento) || 0, 
-          qLeads: Number(qLeads) || 0, 
-          qMQL: Number(qMQL) || 0, 
-          qDesq: Number(qDesq) || 0, 
-          qReuMarc: Number(qReuMarc) || 0, 
-          qReuAcont: Number(qReuAcont) || 0, 
-          qContratos: Number(qContratos) || 0, 
-          qContasInt: Number(qContasInt) || 0, 
-          atividadesSDR: Number(atividadesSDR) || 0 
-        },
-        results: calc,
-        status
-      };
-
-      await sheetsService.appendCalculation(
-        spreadsheetId, 
-        currentCalculation, 
-        { cplMax, mqlMin, desqMax }
-      );
+      // Exportar apenas cálculos que ainda não foram exportados
+      for (const calculation of history) {
+        await sheetsService.appendCalculation(
+          spreadsheetId, 
+          calculation, 
+          { cplMax, mqlMin, desqMax }
+        );
+      }
 
       // Sucesso
       const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;

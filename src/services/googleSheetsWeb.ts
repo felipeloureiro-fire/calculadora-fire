@@ -1,12 +1,20 @@
-import { gapi } from 'gapi-script';
 import type { CalculationData } from '../types';
-import { GoogleAuthService } from './googleAuth';
+import { GoogleAuthNewService } from './googleAuthNew';
+
+// Usar a nova Google Identity Services
+declare global {
+  interface Window {
+    gapi: any;
+  }
+}
 
 export class GoogleSheetsWebService {
-  private authService: GoogleAuthService;
+  private authService: GoogleAuthNewService;
 
   constructor() {
-    this.authService = new GoogleAuthService();
+    console.log('🏗️ GoogleSheetsWebService construtor chamado');
+    this.authService = new GoogleAuthNewService();
+    console.log('✅ GoogleSheetsWebService criado com sucesso');
   }
 
   async initialize(): Promise<void> {
@@ -77,7 +85,7 @@ export class GoogleSheetsWebService {
 
   // Criar nova planilha
   async createSpreadsheet(title: string = 'Fire Banking - Performance Calculator'): Promise<string> {
-    const response = await gapi.client.sheets.spreadsheets.create({
+    const response = await window.gapi.client.sheets.spreadsheets.create({
       resource: {
         properties: {
           title
@@ -100,16 +108,52 @@ export class GoogleSheetsWebService {
     }
 
     try {
+      // Primeiro, verificar se a planilha existe
+      console.log('🔍 Verificando planilha:', spreadsheetId);
+      
       // Verificar se planilha tem headers
-      const existingData = await gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!A1:Z1`,
-      });
+      let existingData;
+      
+      try {
+        existingData = await window.gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `${sheetName}!A1:Z1`,
+        });
+        console.log('✅ Range acessado com sucesso');
+      } catch (error: any) {
+        console.log('⚠️ Erro ao acessar range, tentando criar aba:', error);
+        
+        // Se o erro é sobre a aba não existir, criar a aba
+        if (error.status === 400) {
+          console.log('📝 Criando aba:', sheetName);
+          await window.gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            resource: {
+              requests: [{
+                addSheet: {
+                  properties: {
+                    title: sheetName
+                  }
+                }
+              }]
+            }
+          });
+          
+          console.log('✅ Aba criada, tentando acessar range novamente...');
+          // Tentar novamente após criar a aba
+          existingData = await window.gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `${sheetName}!A1:Z1`,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       // Se não tem headers, adicionar
       if (!existingData.result.values || existingData.result.values.length === 0) {
         const headers = this.getHeaders();
-        await gapi.client.sheets.spreadsheets.values.update({
+        await window.gapi.client.sheets.spreadsheets.values.update({
           spreadsheetId,
           range: `${sheetName}!A1`,
           valueInputOption: 'RAW',
@@ -119,7 +163,7 @@ export class GoogleSheetsWebService {
         });
 
         // Formatar cabeçalhos
-        await gapi.client.sheets.spreadsheets.batchUpdate({
+        await window.gapi.client.sheets.spreadsheets.batchUpdate({
           spreadsheetId,
           resource: {
             requests: [{
@@ -145,7 +189,7 @@ export class GoogleSheetsWebService {
 
       // Adicionar nova linha com o cálculo atual
       const newRow = this.formatCalculationRow(calculation, targets);
-      await gapi.client.sheets.spreadsheets.values.append({
+      await window.gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId,
         range: `${sheetName}!A:Z`,
         valueInputOption: 'RAW',
@@ -156,6 +200,48 @@ export class GoogleSheetsWebService {
 
     } catch (error) {
       console.error('Erro ao exportar:', error);
+      throw error;
+    }
+  }
+
+  // Limpar planilha e exportar todos os dados (evita duplicatas)
+  async clearAndExportAll(
+    spreadsheetId: string,
+    calculations: CalculationData[],
+    targets: { cplMax: number; mqlMin: number; desqMax: number },
+    sheetName: string = 'Calculations'
+  ): Promise<void> {
+    if (!this.isAuthenticated()) {
+      throw new Error('Usuário não autenticado. Faça login primeiro.');
+    }
+
+    try {
+      // Limpar dados existentes (mantém apenas headers)
+      await window.gapi.client.sheets.spreadsheets.values.clear({
+        spreadsheetId,
+        range: `${sheetName}!A2:Z`,
+      });
+
+      // Preparar todas as linhas de dados
+      const rows = calculations.map(calc => 
+        this.formatCalculationRow(calc, targets)
+      );
+
+      if (rows.length > 0) {
+        // Adicionar todos os dados de uma vez
+        await window.gapi.client.sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${sheetName}!A2`,
+          valueInputOption: 'RAW',
+          resource: {
+            values: rows,
+          },
+        });
+      }
+
+      console.log(`✅ ${calculations.length} cálculos exportados (sem duplicatas)`);
+    } catch (error) {
+      console.error('Erro ao exportar todos os dados:', error);
       throw error;
     }
   }
