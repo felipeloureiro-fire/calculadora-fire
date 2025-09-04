@@ -1,69 +1,124 @@
-# React + TypeScript + Vite
+# Fire Banking Performance Calculator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Calculadora de KPIs de marketing para equipe Fire Banking - Acompanhe métricas de performance, leads, conversões e atividades de SDR em tempo real.
 
-Currently, two official plugins are available:
+## 🚀 Acesso
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**URL de Produção:** https://calculadora-fire.vercel.app
 
-## Expanding the ESLint configuration
+## 📊 Funcionalidades
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Cálculos em Tempo Real
+- **CPL (Cost Per Lead)** - Custo por lead gerado
+- **% MQL** - Percentual de Marketing Qualified Leads  
+- **% Desqualificados** - Taxa de leads desqualificados
+- **Conectividade SDR** - Eficiência de reuniões marcadas
+- **No-show** - Diferença entre reuniões marcadas e realizadas
+- **Atividade SDR/MQL** - Volume de atividades por lead qualificado
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Metas e Status
+- ✅ **CPL ≤ R$ 40,00** - Meta de custo por lead
+- ✅ **MQL ≥ 30%** - Meta de conversão para MQL
+- ✅ **Desqualificados ≤ 15%** - Meta máxima de desqualificação
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Persistência e Colaboração
+- 💾 **Histórico Local** - Cálculos salvos no navegador
+- 📤 **Exportação Google Sheets** - Dados exportados para planilha compartilhada
+- 👥 **Colaborativo** - Equipe compartilha mesma planilha
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🛠️ Tecnologias
+
+- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS
+- **Autenticação:** Google Identity Services (OAuth 2.0)
+- **Integração:** Google Sheets API v4
+- **Deploy:** Vercel
+
+## 🔧 Desenvolvimento
+
+### Pré-requisitos
+- Node.js 18+
+- npm ou yarn
+
+### Setup Local
+```bash
+# Clone o repositório
+git clone https://github.com/felipeloureiro-fire/calculadora-fire.git
+
+# Instale dependências
+npm install
+
+# Configure variáveis de ambiente
+cp .env.example .env
+# Adicione VITE_GOOGLE_CLIENT_ID e VITE_GOOGLE_SPREADSHEET_ID
+
+# Execute em desenvolvimento
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Scripts Disponíveis
+```bash
+npm run dev      # Servidor de desenvolvimento (localhost:5173)
+npm run build    # Build para produção
+npm run preview  # Preview do build local
+npm run lint     # Executa ESLint
 ```
+
+## ⚙️ Configuração Google Cloud
+
+### OAuth 2.0 Client ID
+- **Application type:** Web application  
+- **Authorized JavaScript origins:** 
+  - `http://localhost:5173` (desenvolvimento)
+  - `https://calculadora-fire.vercel.app` (produção)
+- **Authorized redirect URIs:** Mesmas URLs acima
+
+### Google Sheets API
+- Ativar Google Sheets API no projeto
+- Configurar OAuth Consent Screen
+- Adicionar usuários autorizados em "Test users"
+
+## 📋 Arquitetura
+
+```
+src/
+├── designs/variant2/          # Componente principal
+│   ├── AppVariant2.tsx       # Interface da calculadora
+│   └── index.ts              # Export principal
+├── hooks/
+│   └── useCalculationHistory.ts  # Gerenciamento do histórico
+├── services/
+│   ├── googleAuthNew.ts      # Autenticação Google
+│   └── googleSheetsWeb.ts    # Integração Sheets
+├── types.ts                  # Interfaces TypeScript
+└── main.tsx                  # Entry point
+```
+
+## 🔐 Variáveis de Ambiente
+
+```env
+# OAuth Google Client ID
+VITE_GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com
+
+# ID da planilha compartilhada  
+VITE_GOOGLE_SPREADSHEET_ID=id-da-planilha
+```
+
+## 📈 Como Usar
+
+1. **Acesse** https://calculadora-fire.vercel.app
+2. **Preencha** os dados de entrada (orçamento, leads, etc.)
+3. **Visualize** os KPIs calculados automaticamente  
+4. **Salve** cálculos no histórico local
+5. **Exporte** dados para Google Sheets compartilhado
+
+## 👥 Equipe
+
+Calculadora desenvolvida para uso interno da equipe Fire Banking (3 usuários autorizados).
+
+## 🚀 Deploy
+
+Aplicação deployada automaticamente no Vercel via GitHub Actions. Pushes para `main` triggeram novo deploy em produção.
+
+---
+
+**🔥 Fire Banking** - Performance Calculator v1.0
